@@ -1,0 +1,23 @@
+[project]
+name = "sanctimonia"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Shimgo2008", email = "Shimgo2008@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "nanobind>=2.11.0",
+    "numpy>=2.4.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.15,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ninja>=1.13.0",
+    "scikit-build-core>=0.11.6",
+]
