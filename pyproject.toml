@@ -1,3 +1,5 @@
+# pyproject.toml
+
 [project]
 name = "sanctimonia"
 version = "0.1.0"
@@ -13,11 +15,17 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.8.15,<0.9.0"]
-build-backend = "uv_build"
+requires = ["scikit-build-core>=0.11.6", "nanobind>=2.11.0"]
+build-backend = "scikit_build_core.build"
 
 [dependency-groups]
 dev = [
     "ninja>=1.13.0",
     "scikit-build-core>=0.11.6",
 ]
+
+[tool.scikit-build-core]
+cmake.version = ">=3.21.0"
+ninja = true
+# パッケージの場所を明示（推奨）
+wheel.packages = ["src/sanctimonia"]
