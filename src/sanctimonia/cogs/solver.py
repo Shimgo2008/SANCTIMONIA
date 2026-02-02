@@ -8,7 +8,7 @@ import sanctimonia.core as core
 
 class Solver(ABC):
     @abstractmethod
-    def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Matrix:
+    def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> np.ndarray:
         """
         A: 係数行列
         b: 右辺ベクトル
@@ -20,23 +20,23 @@ class Solver(ABC):
 
 
 class CGSolver(Solver):
-    def solve(self, A: SymmetricMatrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> SquareMatrix:
+    def solve(self, A: SymmetricMatrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Vector:
         return core.solve_cg(A, b, x0, tol)
 
 
 class BiCGStabSolver(Solver):
-    def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Matrix:
+    def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Vector:
         return core.solve_bicgstab(A, b, x0, tol)
 
 
 class LSCGSolver(Solver):
-    def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Matrix:
+    def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Vector:
         return core.solve_lscg(A, b, x0, tol)
 
 
 class CholeskySolver(Solver):
-    def solve(self, A: SymmetricMatrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> SquareMatrix:
-        return NotImplementedError
+    def solve(self, A: SymmetricMatrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Vector:
+        raise NotImplementedError()
 
 
 class FullPivLUSolver(Solver):
@@ -46,4 +46,4 @@ class FullPivLUSolver(Solver):
 
 class PartialPivLUSolver(Solver):
     def solve(self, A: Matrix, b: Vector, x0: Optional[np.ndarray] = None, M: Optional[np.ndarray] = None, tol: float = 1e-6) -> Matrix:
-        return NotImplementedError
+        raise NotImplementedError()
