@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Annotated
 
+# 型ヒントのためのエイリアス（実行時はただのnp.ndarray）
 Matrix = Annotated[np.ndarray, "2D Array"]
 Vector = Annotated[np.ndarray, "1D Array"]
 

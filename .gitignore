@@ -9,6 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-# other
-.vscode
+# test directories
 scripts

@@ -1,5 +1,5 @@
 from .preprocessor import Preprocessor, NNPreprocessor, ILUPreprocessor, JacobiPreprocessor, LowFrequencyNNPreprocessor
-from .solver import Solver, CGSolver, BiCGStabSolver, LSCGSolver
+from .solver import Solver, CGSolver, BiCGStabSolver, GMRESSolver
 
 __all__ = [
     "Preprocessor",
@@ -13,5 +13,5 @@ __all__ += [
     "Solver",
     "CGSolver",
     "BiCGStabSolver",
-    "LSCGSolver",
+    "GMRESSolver",
 ]

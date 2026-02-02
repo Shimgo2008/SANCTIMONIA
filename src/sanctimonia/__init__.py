@@ -1,9 +1,7 @@
 from . import cogs
-from . import core
-from .main import solve
+from .main import solv_inverse_matrix_operator
 
 __all__ = [
     "cogs",
-    "core",
-    "solve",
+    "solv_inverse_matrix_operator",
 ]
