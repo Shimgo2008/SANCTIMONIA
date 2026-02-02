@@ -17,19 +17,19 @@ class Preprocessor(ABC):
 
 class NNPreprocessor(Preprocessor):
     def preprocess(self, A, b) -> tuple[A, b, x0, M]:
-        return NotImplementedError
+        raise NotImplementedError()
 
 
 class ILUPreprocessor(Preprocessor):
     def preprocess(self, A, b) -> tuple[A, b, x0, M]:
-        return NotImplementedError
+        return
 
 
 class JacobiPreprocessor(Preprocessor):
     def preprocess(self, A, b) -> tuple[A, b, x0, M]:
-        return NotImplementedError
+        raise NotImplementedError()
 
 
 class LowFrequencyNNPreprocessor(NNPreprocessor):
     def preprocess(self, A, b) -> tuple[A, b, x0, M]:
-        return NotImplementedError
+        raise NotImplementedError()
