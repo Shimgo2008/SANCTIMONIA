@@ -21,8 +21,8 @@ class NNPreprocessor(Preprocessor):
 
 
 class ILUPreprocessor(Preprocessor):
-    def preprocess(self, A, b) -> tuple[A, b, x0, M]:
-        return NotImplementedError
+    def preprocess(self, A, b) -> None:
+        return
 
 
 class JacobiPreprocessor(Preprocessor):

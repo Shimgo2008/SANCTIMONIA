@@ -15,3 +15,19 @@ class isNotSymmetricMatrixError(SolverError):
     def __init__(self, message="The provided matrix is not symmetric."):
         self.message = message
         super().__init__(self.message)
+
+
+class ConvergenceError(SolverError):
+    """Exception raised when the solver fails to converge."""
+    def __init__(self, message="Solver failed to converge", iterations=None, error=None):
+        self.iterations = iterations
+        self.error = error
+        msg = message
+        if iterations is not None and error is not None:
+            msg = f"{message} (iterations: {iterations}, error: {error})"
+        super().__init__(msg)
+
+
+class DecompositionError(SolverError):
+    """Exception raised when the matrix decomposition fails (e.g. zero pivot)."""
+    pass
