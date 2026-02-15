@@ -79,8 +79,8 @@ def create_sparse_ill_conditioned_case(n):
 
     # ここで悪条件化: 特異行列に近づけるために全体を微小な値でシフト、
     # または特定の対角成分だけを非常に小さくする
-    epsilon = 1e-10 
-    main_diag -= (2.0 - epsilon) # 固有値の最小値を epsilon 付近まで下げる
+    epsilon = 1e-10
+    main_diag -= (2.0 - epsilon)  # 固有値の最小値を epsilon 付近まで下げる
 
     diagonals = [main_diag, off_diag, off_diag]
     offsets = [0, 1, -1]
