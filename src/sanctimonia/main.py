@@ -1,6 +1,6 @@
 from typing import Optional
 
-from scipy import sparse
+import scipy as sp
 
 from . import core
 from .cogs.solver import Solver, CGSolver, BiCGStabSolver, LSCGSolver
@@ -21,11 +21,14 @@ def solve(
 
     if isinstance(preprocessor, ILUPreprocessor):
         # ここだけは A を疎行列に強制する
-        A_input = sparse.csc_matrix(A) if not sparse.issparse(A) else A
+        A_input = sp.csc_matrix(A) if not sp.issparse(A) else A
         match method:
             case CGSolver(): return core.solve_cg_ilu(A_input, b, None, tol)
             case LSCGSolver(): return core.solve_lscg_ilu(A_input, b, None, tol)
             case BiCGStabSolver(): return core.solve_bicgstab_ilu(A_input, b, None, tol)
+            case _: raise ValueError("ILUPreprocessor is not compatible with the selected solver.")
+
+    print("Using general solve path.")
 
     x0, M = None, None
     if preprocessor is not None:
