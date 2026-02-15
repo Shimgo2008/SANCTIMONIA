@@ -11,5 +11,5 @@ wheels/
 
 # other
 .vscode
-.cache/
+.cache
 scripts
