@@ -3,7 +3,7 @@ from . import core
 from .main import solve
 
 __all__ = [
-    "cogs",
     "core",
+    "cogs",
     "solve",
 ]
