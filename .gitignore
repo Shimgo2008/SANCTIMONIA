@@ -5,10 +5,12 @@ build/
 dist/
 wheels/
 *.egg-info
+*.so
 
 # Virtual environments
 .venv
 
 # other
 .vscode
+.cache
 scripts

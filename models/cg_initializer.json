@@ -1,0 +1,12 @@
+{
+  "num_layers": 4,
+  "hidden_channels": 64,
+  "feature_dim": 32,
+  "aggr": "mean",
+  "mlp_layers": 2,
+  "dropout": 0.0,
+  "activation": "relu",
+  "use_layer_norm": true,
+  "use_residual": true,
+  "reservoir_dim": 0
+}
