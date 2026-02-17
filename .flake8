@@ -1,2 +1,15 @@
 [flake8]
-ignore = E231, E501, E241
+ignore = E231, E241, E402, E501
+
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    .venv,
+    venv,
+    env,
+    .env,
+    .mypy_cache,
+    .pytest_cache,
+    *.pyi
