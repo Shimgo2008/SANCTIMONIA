@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.15)
+project(sanctimonia LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# scikit-build-core が Python / nanobind を注入する
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+
+add_subdirectory(src/core)
