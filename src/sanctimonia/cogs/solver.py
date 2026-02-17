@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
-from sanctimonia.types import Matrix, Vector, SquareMatrix, SymmetricMatrix
+from sanctimonia.types import Matrix, Vector, SymmetricMatrix
 import sanctimonia.core as core
 
 

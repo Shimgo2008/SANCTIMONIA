@@ -1,10 +1,27 @@
+# /// script
+# dependencies = [
+#     "numpy",
+#     "scipy",
+#     "pyamg"
+# ]
+# [tools.uv.sources]
+# sanctimonia = { path = "src/sanctimonia" }
+# ///
+
+
+import gc
 import time
-import numpy as np
-import scipy.sparse as sp
 from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
+
+import numpy as np
+import pyamg
+import scipy.sparse as sp
 
 # sanctimonia imports
 from sanctimonia.main import solve
+from sanctimonia.types import Matrix
 from sanctimonia.cogs.solver import CGSolver, BiCGStabSolver, FullPivLUSolver
 from sanctimonia.cogs.preprocessor import ILUPreprocessor, LowFrequencyNNPreprocessor
 
@@ -68,6 +85,95 @@ def measure_solver(name, A, b, method, preprocessor=None, tol=1e-6):
         return {"name": name, "time": None, "residual": None, "status": f"Failed: {e}"}
 
 
+def measure_solver_identity(name, A, N, method, preprocessor=None, tol=1e-6, sample_count=5):
+    """
+    Estimates or Measures the time to solve AX=I.
+    Since solve() now supports matrix b (multiple RHS), we can pass the Identity matrix directly.
+    However, for standard iterativ solvers (without batch preprocessor), computing all N columns might be slow.
+    If 'preprocessor' is NNPreprocessor, we SHOULD pass full Identity to leverage batch inference.
+    """
+    print(f"Running {name:<20} (Identity) ... ", end="", flush=True)
+
+    # Use identity matrix as B
+    I = np.identity(N)
+
+    is_nn = preprocessor is not None and isinstance(preprocessor, LowFrequencyNNPreprocessor)
+
+    if is_nn:
+        # Full solve
+        try:
+            start_time = time.time()
+            X_sol = solve(A, I, method=method, preprocessor=preprocessor, tol=tol)
+            elapsed = time.time() - start_time
+
+            indices = np.random.choice(N, size=min(N, 10), replace=False)
+            total_res = 0.0
+            for col_idx in indices:
+                b_vec = I[:, col_idx]
+                x_vec = X_sol[:, col_idx]
+                res_norm = np.linalg.norm(A @ x_vec - b_vec)
+                total_res += res_norm  # b_norm is 1.0
+
+            avg_res = total_res / len(indices)
+
+            print(f"Done. | Time: {elapsed:.4f}s | Avg RelRes: {avg_res:.2e}")
+            return {
+                "name": f"{name} (Identity)",
+                "time": elapsed,
+                "residual": avg_res,
+                "status": "Success"
+            }
+        except Exception as e:
+            print(f"Failed. | Error: {e}")
+            return {
+                "name": f"{name} (Identity)",
+                "time": None,
+                "residual": None,
+                "status": f"Failed: {e}"
+            }
+
+    else:
+        total_time = 0.0
+        total_residual = 0.0
+        success_count = 0
+
+        is_direct = isinstance(method, FullPivLUSolver)
+        n_samples = 1 if is_direct else sample_count
+
+        try:
+            for i in range(n_samples):
+                b_vec = I[:, i]
+                start_time = time.time()
+                x_sol = solve(A, b_vec, method=method, preprocessor=preprocessor, tol=tol)
+                elapsed = time.time() - start_time
+                total_time += elapsed
+
+                res_norm = np.linalg.norm(A @ x_sol - b_vec)
+                total_residual += res_norm
+                success_count += 1
+
+            avg_time = total_time / success_count
+            avg_res = total_residual / success_count
+            estimated_total_time = avg_time * N
+
+            print(f"Done. | Est. Time: {estimated_total_time:.4f}s (Approx) | Avg RelRes: {avg_res:.2e}")
+
+            return {
+                "name": f"{name} (Identity)",
+                "time": estimated_total_time,
+                "residual": avg_res,
+                "status": "Success (Est)"
+            }
+        except Exception as e:
+            print(f"Failed. | Error: {e}")
+            return {
+                "name": f"{name} (Identity)",
+                "time": None,
+                "residual": None,
+                "status": f"Failed: {e}"
+            }
+
+
 def create_sparse_ill_conditioned_case(n):
     """
     疎行列（ポアソン）をベースに、対角成分を極端に小さくして悪条件化させたもの。
@@ -97,7 +203,7 @@ def run_benchmark(case_name, A_factory, N, TOL, model_path):
     # 1. Prepare Problem
     A = A_factory(N)
 
-    # Create a random solution and compute b
+    # Create a random solution and compute b for single vector test
     np.random.seed(42)
     x_true = np.random.rand(N)
     b = A @ x_true
@@ -109,6 +215,7 @@ def run_benchmark(case_name, A_factory, N, TOL, model_path):
 
     results = []
 
+    # --- Single Vector Benchmarks ---
     # (A) BiCGStab (No Preconditioner)
     results.append(
         measure_solver("BiCGStab (None)", A, b, BiCGStabSolver(), None, tol=TOL)
@@ -144,22 +251,67 @@ def run_benchmark(case_name, A_factory, N, TOL, model_path):
                 }
             )
     else:
-        print("Skipping NN Solver (Model not found)")
+        # print("Skipping NN Solver (Model not found)")
+        pass
+
+    # --- Identity Matrix (Multiple RHS) Benchmarks ---
+    print("\n--- Identity Matrix Benchmark (Estimating for N columns) ---")
+
+    # (A-Identity) BiCGStab
+    results.append(
+        measure_solver_identity("BiCGStab (None)", A, N, BiCGStabSolver(), None, tol=TOL)
+    )
+
+    gc.collect()
+
+    # (B-Identity) CG (ILU)
+    results.append(
+        measure_solver_identity("CG (ILU)", A, N, CGSolver(), ILUPreprocessor(), tol=TOL)
+    )
+
+    gc.collect()
+
+    # (C-Identity) Full Piv LU
+    # For Direct Solver, we just multiply single solve time by N (linear scaling assumption)
+    results.append(
+        measure_solver_identity("Full Piv LU", A, N, FullPivLUSolver(), None, tol=TOL)
+    )
+
+    gc.collect()
+
+    # (D-Identity) CG (NN Preconditioner)
+    if model_path:
+        try:
+            nn_preprocessor = LowFrequencyNNPreprocessor(model_path)
+            results.append(
+                measure_solver_identity(
+                    "CG (NN Precond)", A, N, CGSolver(), nn_preprocessor, tol=TOL
+                )
+            )
+        except Exception as e:
+            results.append(
+                {
+                    "name": "CG (NN Precond) (Identity)",
+                    "time": None,
+                    "residual": None,
+                    "status": f"Init Failed: {e}",
+                }
+            )
 
     # Summary Table for this case
     print(f"\n--- Summary: {case_name} ---")
-    print(f"{'Solver':<20} | {'Time (s)':<10} | {'RelRes':<10}")
-    print("-" * 46)
+    print(f"{'Solver':<30} | {'Time (s)':<10} | {'RelRes':<10}")
+    print("-" * 56)
     for res in results:
-        if res["status"] == "Success":
-            print(f"{res['name']:<20} | {res['time']:.6f}   | {res['residual']:.2e}")
+        if res["status"].startswith("Success"):
+            print(f"{res['name']:<30} | {res['time']:.6f}   | {res['residual']:.2e}")
         else:
-            print(f"{res['name']:<20} | FAILED     | -")
+            print(f"{res['name']:<30} | FAILED     | -")
 
 
 def main():
     # Settings
-    N = 2000
+    N = 1000
     TOL = 1e-8
 
     # Check Model Path
@@ -171,14 +323,33 @@ def main():
             model_path = None
 
     # # Run Benchmark for Heavy Case (SPD Poisson)
-    # run_benchmark("Heavy (SPD Poisson)", create_heavy_test_case, N, TOL, model_path)
+    run_benchmark("Heavy (SPD Poisson)", create_heavy_test_case, N, TOL, model_path)
+
+    gc.collect()
 
     # # Run Benchmark for Ill-Conditioned Case (Hilbert)
-    # run_benchmark("Ill-Conditioned", create_ill_conditioned_case, N, TOL, model_path)
+    run_benchmark("Ill-Conditioned", create_ill_conditioned_case, N, TOL, model_path)
+
+    gc.collect()
 
     # Run Benchmark for Sparse Ill-Conditioned Case (Poisson + Bad Diagonal)
     run_benchmark("Sparse Ill-Conditioned", create_sparse_ill_conditioned_case, N, TOL, model_path)
 
 
+def test_pyamg():
+    N = 1000
+    A = create_sparse_ill_conditioned_case(N)
+    b = np.random.rand(N)
+    A = sp.csc_matrix(A)  # Convert to sparse format for pyamg
+
+    start_time = time.time()
+    ml = pyamg.ruge_stuben_solver(A)
+    x = ml.solve(b, tol=1e-8)
+    elapsed = time.time() - start_time
+    res_norm = np.linalg.norm(A @ x - b)
+    print(f"Time = {elapsed:.6f}s, RelRes = {res_norm / np.linalg.norm(b):.2e}")
+
+
 if __name__ == "__main__":
     main()
+    # test_pyamg()
