@@ -68,9 +68,15 @@ def solve(
     if isinstance(preprocessor, ILUPreprocessor):
         A_input = sparse.csc_matrix(A) if not sparse.issparse(A) else A
         match method:
-            case CGSolver(): return core.solve_cg_ilu(A_input, b, x0, tol)
-            case LSCGSolver(): return core.solve_lscg_ilu(A_input, b, x0, tol)
-            case BiCGStabSolver(): return core.solve_bicgstab_ilu(A_input, b, x0, tol)
+            case CGSolver():
+                ilu_solver = core.ILUCGSolverCore(method.num_threads, method.device, method.default_tol, method.max_iterations)
+                return ilu_solver.solve_sparse(A_input, b, x0, tol)
+            case LSCGSolver():
+                ilu_solver = core.ILULSCGSolverCore(method.num_threads, method.device, method.default_tol, method.max_iterations)
+                return ilu_solver.solve_sparse(A_input, b, x0, tol)
+            case BiCGStabSolver():
+                ilu_solver = core.ILUBiCGStabSolverCore(method.num_threads, method.device, method.default_tol, method.max_iterations)
+                return ilu_solver.solve_sparse(A_input, b, x0, tol)
             case _:
                 # Fallback if solver doesn't support ILU directly in core
                 pass
