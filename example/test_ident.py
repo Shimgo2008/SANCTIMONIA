@@ -1,4 +1,4 @@
-
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +6,7 @@ import scipy.sparse as sp
 from sanctimonia import core
 from sanctimonia.cogs.preprocessor import LowFrequencyNNPreprocessor
 
+sys.stdout.flush()
 
 def create_heavy_test_case(n):
     """
@@ -38,14 +39,15 @@ def create_ill_conditioned_case(n):
     return A
 
 
-def create_sparse_ill_conditioned_case(n):
+def create_sparse_ill_conditioned_case(n: int, main_diag: float, off_diag: float):
     """
     疎行列(ポアソン)をベースに、対角成分を極端に小さくして悪条件化させたもの。
     反復法が低周波成分の誤差を消しにくくなる設定。
     """
     # 1D Laplacian (Poisson) の作成
-    main_diag = np.ones(n) * 2.0
-    off_diag = np.ones(n - 1) * -1.0
+
+    # main_diag = np.ones(n) * 2.0
+    # off_diag = np.ones(n - 1) * -1.0
 
     # ここで悪条件化: 特異行列に近づけるために全体を微小な値でシフト、
     # または特定の対角成分だけを非常に小さくする
@@ -61,18 +63,35 @@ def create_sparse_ill_conditioned_case(n):
     return A_sparse.toarray()
 
 
+def create_hilbert_matrix(n: int):
+    """
+    n次のヒルベルト行列を生成する。
+    極めて悪条件(ill-conditioned)な正定値対称行列。
+    """
+    # i, j のインデックスグリッドを作成 (0-indexed)
+    i, j = np.meshgrid(np.arange(1, n + 1), np.arange(1, n + 1))
+
+    # ヒルベルト行列の定義: H[i,j] = 1 / (i + j - 1)
+    # 0-indexedの場合は 1 / (i + j + 1) と書かれることも多いですが、
+    # 本質的な性質（条件数の爆発）は同じです。
+    A_hilbert = 1.0 / (i + j - 1.0)
+
+    return A_hilbert
+
+
 if __name__ == "__main__":
 
     print("[ITER] Iteration Count, Relative Residual, Elapsed Time (s)")
 
-    model_path = Path(__file__).parent.parent / "models" / "cg_initializer.onnx"
+    # 
+    model_path = Path(__file__).parent.parent / "models" / "highmodel" / "cg_initializer.onnx"
     print(f"Loading model from: {model_path}")
     preprocessor = LowFrequencyNNPreprocessor(model_path, device="cpu")
 
-    N = 30000
+    N = 4096*2
 
     # Keep this example challenging on purpose
-    A = create_sparse_ill_conditioned_case(N)
+    A = create_sparse_ill_conditioned_case(N, 2.0, -1)
     b = np.ascontiguousarray(np.identity(A.shape[0])[:, 0])
     A = np.ascontiguousarray(A)
 
@@ -101,8 +120,8 @@ if __name__ == "__main__":
     except RuntimeError as e2:
         print(f"CG+NN did not converge ({e2}). Trying ILU preconditioned CG...")
         try:
-            A_sparse = sp.csc_matrix(A)
-            core.solve_cg_ilu(A_sparse, b, tol=1e-3)
+            # A = sp.csc_matrix(A)
+            core.solve_cg_ilu(A, b, tol=1e-3)
         except RuntimeError as e3:
             print(f"CG+ILU did not converge ({e3}). Falling back to direct LU...")
             core.solve_full_piv_lu(A, b)
