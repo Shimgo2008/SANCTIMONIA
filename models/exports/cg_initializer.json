@@ -1,0 +1,26 @@
+{
+  "num_layers": 8,
+  "hidden_channels": 64,
+  "feature_dim": 32,
+  "aggr": "mean",
+  "multi_scale_hops": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "use_global_pool_context": true,
+  "use_hierarchical_pooling": true,
+  "pool_stride": 2,
+  "mlp_layers": 2,
+  "dropout": 0.1,
+  "activation": "relu",
+  "use_layer_norm": true,
+  "use_residual": false,
+  "reservoir_dim": 0,
+  "output_mode": "basis",
+  "normalize_basis": true,
+  "soft_aggregation": true,
+  "soft_aggregation_topk": 0,
+  "numerical_eps": 1e-08
+}
